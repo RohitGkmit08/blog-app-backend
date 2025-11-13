@@ -6,10 +6,11 @@ const blogRouter = require("./routes/blogRoutes");
 
 const app = express();
 
-// middleware for JSON APIs
+// Parse JSON and form-data text fields
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// mount admin routes
+// Mount routes
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/blog", blogRouter);
 
