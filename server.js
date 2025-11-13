@@ -1,20 +1,27 @@
 const express = require("express");
 require("dotenv").config();
-
-const { connect } = require("./config/database"); 
-const test = require("./routes/test"); // adjust path if needed
+const { connect } = require("./config/database");
+const adminRouter = require("./routes/adminRoutes");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
+// middleware
 app.use(express.json());
 
-// connect DB
-connect();
 
-// test route
-app.use("/api/v1", test);
+// mount admin routes
+app.use("/api/v1/admin", adminRouter);
 
-app.listen(PORT, () => {
-  console.log(`App running on port ${PORT}`);
-});
+const port = process.env.PORT || 3000;
+
+connect()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`App is running on port ${port}`);
+    });
+  })
+  .catch(() => {
+    console.error("Server not started due to DB connection failure");
+  });
+
+module.exports = app;
