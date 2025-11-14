@@ -3,8 +3,7 @@ const Blog = require("../models/blog");
 const imageKit = require("../config/imageKit");
 const Comment = require("../models/comment");
 
-
-// CREATE BLOG
+//create blog
 exports.createBlog = async (req, res) => {
   try {
     const {
@@ -38,12 +37,17 @@ exports.createBlog = async (req, res) => {
     }
 
     const fileBuffer = fs.readFileSync(imageFile.path);
+   
 
     const uploadResponse = await imageKit.upload({
-      file: fileBuffer,
-      fileName: imageFile.originalname,
-      folder: "/blogs"
-    });
+    file: fileBuffer,
+    fileName: imageFile.originalname,
+    folder: "/blogs"
+
+  
+
+});
+
 
     const optimizedImgUrl = imageKit.url({
       path: uploadResponse.filePath,
@@ -72,16 +76,97 @@ exports.createBlog = async (req, res) => {
     });
 
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get al blogs
+exports.getAllBlogs = async (req, res) => {
+  try {
+    const blogs = await Blog.find().sort({ createdAt: -1 });
+    return res.json({ success: true, blogs });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
 
+// Get single blog
+exports.getSingleBlog = async (req, res) => {
+  try {
+    const blogId = req.params.blogId;
+    const blog = await Blog.findById(blogId);
 
-// ADD COMMENT
+    if (!blog) {
+      return res.json({ success: false, message: "Blog not found" });
+    }
+
+    return res.json({ success: true, blog });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update blog
+exports.updateBlog = async (req, res) => {
+  try {
+    const blogId = req.params.blogId;
+
+    let blogData = req.body;
+
+    if (req.file) {
+      const fileBuffer = fs.readFileSync(req.file.path);
+
+      const uploadResponse = await imageKit.upload({
+        file: fileBuffer,
+        fileName: req.file.originalname,
+        folder: "/blogs"
+      });
+
+      blogData.image = imageKit.url({
+        path: uploadResponse.filePath,
+        transformation: [
+          { quality: "auto" },
+          { format: "webp" },
+          { width: "1280" }
+        ]
+      });
+    }
+
+    const updatedBlog = await Blog.findByIdAndUpdate(blogId, blogData, {
+      new: true
+    });
+
+    if (!updatedBlog) {
+      return res.json({ success: false, message: "Blog not found" });
+    }
+
+    return res.json({ success: true, message: "Blog updated", updatedBlog });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Delete blog
+exports.deleteBlog = async (req, res) => {
+  try {
+    const blogId = req.params.blogId;
+
+    const blog = await Blog.findByIdAndDelete(blogId);
+
+    if (!blog) {
+      return res.json({ success: false, message: "Blog not found" });
+    }
+
+    return res.json({ success: true, message: "Blog deleted" });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// add comment
 exports.addComment = async (req, res) => {
   try {
     const { blogId, userId, comment } = req.body;
@@ -105,7 +190,7 @@ exports.addComment = async (req, res) => {
       blogId,
       userId,
       comment,
-      status: "pending",     // moderation workflow
+      status: "pending",
       deletedAt: null
     });
 
@@ -115,16 +200,11 @@ exports.addComment = async (req, res) => {
     });
 
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
-
-// GET APPROVED COMMENTS FOR A BLOG
+// get approved comments
 exports.getBlogComment = async (req, res) => {
   try {
     const { blogId } = req.body;
@@ -142,15 +222,9 @@ exports.getBlogComment = async (req, res) => {
       deletedAt: null
     }).sort({ createdAt: -1 });
 
-    return res.json({
-      success: true,
-      comments
-    });
+    return res.json({ success: true, comments });
 
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

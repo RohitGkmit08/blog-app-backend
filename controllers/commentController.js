@@ -1,115 +1,54 @@
+const Comment = require("../models/comment");
 
-const Comment = require("../models/comment")
 
+exports.moderateComment = async (req, res) => {
+    try {
+        const { commentId, status } = req.body;
 
-// Approve comment
-exports.approveComments = async (req , res) => {
-    try{
-        const {commentId} = req.body;
-
-        if(!commentId){
-            return res.json({
-                success:false,
-                message:"commentId is required"
-            })
-        }
-
-        const comment = await Comment.findById(commentId);
-        if(!comment){
-            return res.json({
-                success:false,
-                message:"No comment found"
-            })
-        }
-
-        comment.status = "approved"
-        await comment.save()
-
-        return res.json({
-            success:true,
-            message:"Comment approved"
-        })
-    }
-
-    catch(err){
-        return res.status(500).json({
-            success:false,
-            message:err.message
-        })
-    }
-}
-
-// Reject comment 
-exports.rejectComment = async (req , res) => {
-
-    const {commentId} = req.body
-
-    try{
+        // Validate inputs
         if (!commentId) {
-        return res.json({
-        success: false,
-        message: "commentId is required"
-      });
-    }
-
-    const comment = await Comment.findById(commentId);
-        if (!comment) {
-        return res.json({
-        success: false,
-        message: "Comment not found"
-        });
-    } 
-
-     comment.status = "rejected"
-     await comment.save()
-
-     return res.json({
-        success:true,
-        message:"comment rejected"
-     })
-    }
-
-    catch(err){
-        return res.status(500).json({
-        success: false,
-        message: err.message
-    });
-    }
-}
-
-// Delete Comment
-exports.deleteComment = async (req , res) => {
-    try{
-        const {commentId} = req.body;
-        if(!commentId){
             return res.json({
-                success:false,
-                message:"Comment ID is required"
-            })
+                success: false,
+                message: "commentId is required"
+            });
         }
 
-        const comment = await Comment.findById(commentId)
-        if(!comment){
+        if (!["approved", "rejected", "deleted"].includes(status)) {
             return res.json({
-                success:false,
-                message:"no comment found"
-            })
-        } 
+                success: false,
+                message: "Invalid status"
+            });
+        }
 
-        comment.deletedAt = new Date();
+        // Fetch comment
+        const comment = await Comment.findById(commentId);
+        if (!comment) {
+            return res.json({
+                success: false,
+                message: "No comment found"
+            });
+        }
+
+        // Apply changes
+        if (status === "deleted") {
+            comment.status = "deleted";
+            comment.deletedAt = new Date();
+        } else {
+            comment.status = status;
+            comment.deletedAt = null;
+        }
+
         await comment.save();
 
         return res.json({
-            success:true,
-            message:"comment deleted"
-        })
-    }
+            success: true,
+            message: `Comment ${status}`
+        });
 
-    catch(err){
+    } catch (err) {
         return res.status(500).json({
-        success: false,
-        message: err.message
-    });
-
+            success: false,
+            message: err.message
+        });
     }
-}
+};

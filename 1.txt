@@ -1,0 +1,13 @@
+{
+  "title": "My second Blog",
+  "subTitle": "subtitle 2",
+  "description": "Full description goes here",
+  "slug": "my-2nd-blog",
+  "category": "sports",
+  "authorName": "Rohit-sinha",
+  "isPublished": true,
+  "publishedAt": "2024-06-10"
+}
+
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNpbmhhcm9oaXQ5NjYwQGdtYWlsLmNvbSIsImlhdCI6MTc2MzEyMTk3OCwiZXhwIjoxNzYzMjA4Mzc4fQ.IEMYqmD4alqf4DiVciipTlAiedhhcOGxMI7ZCFK-gjI

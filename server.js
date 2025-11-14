@@ -1,20 +1,27 @@
 const express = require("express");
 require("dotenv").config();
 
-const { connect } = require("./config/database"); 
-const test = require("./routes/test"); // adjust path if needed
+const { connect } = require("./config/database");
+
+const adminRouter = require("./routes/adminRoutes");
+const blogRouter = require("./routes/blogRoutes");
+const commentRouter = require("./routes/commentRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
-// connect DB
+// Connect DB
 connect();
 
-// test route
-app.use("/api/v1", test);
+// Mount routes
+app.use("/admin", adminRouter);
+app.use("/", blogRouter);
+app.use("/", commentRouter);
 
 app.listen(PORT, () => {
   console.log(`App running on port ${PORT}`);
 });
+
+module.exports = app;
