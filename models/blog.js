@@ -36,13 +36,13 @@ const blogSchema = new mongoose.Schema(
 
     authorName: {
       type: String,
-      required: true,         // displayed on detailed blog page
+      required: true,       
     },
 
     comments: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Comment",       // supports user commenting feature
+        ref: "Comment",       
       },
     ],
 

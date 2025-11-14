@@ -1,8 +1,12 @@
+// controllers/adminController.js
+
 const jwt = require("jsonwebtoken");
 const Blog = require("../models/blog");
-const { create } = require("../models/comment");
+const Comment = require("../models/comment");
 require("dotenv").config();
 
+
+// ADMIN LOGIN
 exports.adminLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -33,95 +37,102 @@ exports.adminLogin = async (req, res) => {
 };
 
 
-exports.getAllBlogs = async(req , res) => {
-    try{
-        const blogs = await Blog.find({}).sort({createdAt:-1});
-         return res.json({
+// GET ALL BLOGS (ADMIN)
+exports.getAllBlogs = async (req, res) => {
+    try {
+        const blogs = await Blog.find({}).sort({ createdAt: -1 });
+
+        return res.json({
             success: true,
             blogs
         });
-    }
-    catch(err){
+    } catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message
         });
     }
-}
+};
 
-exports.getAllComments = async (req , res) => {
-    try{
-        let comments = await Comment.find({}).populate("blog").sort({createdAt:-1})
+
+// GET ALL COMMENTS (ADMIN)
+exports.getAllComments = async (req, res) => {
+    try {
+        const comments = await Comment.find({})
+            .populate("blog")
+            .sort({ createdAt: -1 });
+
         return res.json({
             success: true,
             comments
         });
-    }
-    catch(err){
+    } catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message
         });
     }
-}
+};
 
 
-exports.getDashboard = async(req , res)=>{
-    try{
-        const recentBlogs = await Blog.find({}).sort({createdAt:-1});
+// ADMIN DASHBOARD DATA
+exports.getDashboard = async (req, res) => {
+    try {
+        const recentBlogs = await Blog.find({}).sort({ createdAt: -1 });
         const blogs = await Blog.countDocuments();
         const comments = await Comment.countDocuments();
-        const draft = await Blog.countDocuments({isPublished:false})
+        const draft = await Blog.countDocuments({ isPublished: false });
 
-        const dashboardData = {
-            blogs, comments, draft, recentBlogs
-        }
-        res.json({
+        const dashboardData = { blogs, comments, draft, recentBlogs };
+
+        return res.json({
             success: true,
             dashboardData
-        })
-    }
-    catch(err){
+        });
+    } catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message
         });
     }
-}
+};
 
 
-exports.deleteComment = async(req , res) => {
-    try{
-        const {id} = req.body;
+// DELETE COMMENT
+exports.deleteComment = async (req, res) => {
+    try {
+        const { id } = req.body;
+
         await Comment.findByIdAndDelete(id);
 
-        res.json({
-            success:true,
-            message:"comment deleted successfully"
-        })
-    }
-    catch(err){
+        return res.json({
+            success: true,
+            message: "comment deleted successfully"
+        });
+    } catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message
         });
     }
-}
+};
 
-exports.isApproved = async(req , res) => {
-    try{
-        const {id} = req.body;
-        await Comment.findByIdAndUpdate(id, {isApproved : true});
 
-        res.json({
-            success:true,
-            message:"comment approved successfully"
-        })
-    }
-    catch(err){
+// APPROVE COMMENT
+exports.isApproved = async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        await Comment.findByIdAndUpdate(id, { isApproved: true });
+
+        return res.json({
+            success: true,
+            message: "comment approved successfully"
+        });
+    } catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message
         });
     }
-}
+};
