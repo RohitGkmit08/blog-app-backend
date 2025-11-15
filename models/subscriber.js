@@ -1,6 +1,3 @@
+const mongoose = require('mongoose');
 
-const mongoose = require("mongoose")
-
-const subscriber = new mongoose.Schema({
-    
-})
+const subscriber = new mongoose.Schema({});

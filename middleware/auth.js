@@ -1,17 +1,16 @@
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: "Unauthorized: Token missing"
+      message: 'Unauthorized: Token missing',
     });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -20,7 +19,7 @@ module.exports = (req, res, next) => {
   } catch (err) {
     return res.status(401).json({
       success: false,
-      message: "Unauthorized: Invalid token"
+      message: 'Unauthorized: Invalid token',
     });
   }
 };

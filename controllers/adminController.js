@@ -1,6 +1,5 @@
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
-
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 // ADMIN LOGIN
 exports.adminLogin = async (req, res) => {
@@ -11,26 +10,23 @@ exports.adminLogin = async (req, res) => {
     if (email !== process.env.ADMIN_ID || password !== process.env.ADMIN_KEY) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials"
+        message: 'Invalid credentials',
       });
     }
 
     // Generate JWT token
-    const token = jwt.sign(
-      { email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: '1d',
+    });
 
     return res.json({
       success: true,
-      token
+      token,
     });
-
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 };

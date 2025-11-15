@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const blogSchema = new mongoose.Schema(
   {
@@ -38,7 +38,6 @@ const blogSchema = new mongoose.Schema(
       required: true,
     },
 
-
     isPublished: {
       type: Boolean,
       required: true,
@@ -48,7 +47,7 @@ const blogSchema = new mongoose.Schema(
       type: Date,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model("Blog", blogSchema);
+module.exports = mongoose.model('Blog', blogSchema);
