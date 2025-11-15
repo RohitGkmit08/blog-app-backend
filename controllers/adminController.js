@@ -1,9 +1,8 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-// =============================
+
 // ADMIN LOGIN
-// =============================
 exports.adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;

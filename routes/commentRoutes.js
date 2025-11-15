@@ -1,15 +1,17 @@
 const express = require("express");
 const commentRouter = express.Router();
 
-const {
-  addComment,
-  getBlogComment
-} = require("../controllers/blogController");
+
+const { addComment } = require("../controllers/blogController");
+
+
+const { getBlogComment } = require("../controllers/commentController");
 
 // Add comment (public)
 commentRouter.post("/comments", addComment);
 
-// Get all comments for a blog (public)
+
+// Get approved comments for a blog
 commentRouter.get("/comments/:blogId", getBlogComment);
 
 module.exports = commentRouter;

@@ -8,7 +8,9 @@ const auth = require("../middleware/auth");
 // Admin login
 adminRouter.post("/login", adminLogin);
 
-// Comment moderation (single endpoint for approve/reject/delete)
+// Comment moderation (approve/reject/delete)
+console.log("moderateComment is:", moderateComment);
 adminRouter.put("/comments/moderate", auth, moderateComment);
+console.log("moderateComment is:", moderateComment);
 
 module.exports = adminRouter;

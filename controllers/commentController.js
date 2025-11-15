@@ -1,11 +1,41 @@
 const Comment = require("../models/comment");
 
+console.log("Loaded COMMENT CONTROLLER");
+
+exports.getBlogComment = async (req, res) => {
+  try {
+    const blogId = req.params.blogId; // GET request → params
+
+    if (!blogId) {
+      return res.json({
+        success: false,
+        message: "blogId is required"
+      });
+    }
+
+    const comments = await Comment.find({
+      blogId,
+      status: "approved",
+      deletedAt: null
+    }).sort({ createdAt: -1 });
+
+    return res.json({ success: true, comments });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 exports.moderateComment = async (req, res) => {
     try {
+        console.log("moderateComment called");
+        console.log("Body received:", req.body);
+
         const { commentId, status } = req.body;
 
-        // Validate inputs
+        console.log("Looking for comment:", commentId);
+
         if (!commentId) {
             return res.json({
                 success: false,
@@ -20,8 +50,8 @@ exports.moderateComment = async (req, res) => {
             });
         }
 
-        // Fetch comment
         const comment = await Comment.findById(commentId);
+        console.log("Comment found:", comment)
         if (!comment) {
             return res.json({
                 success: false,
@@ -29,7 +59,6 @@ exports.moderateComment = async (req, res) => {
             });
         }
 
-        // Apply changes
         if (status === "deleted") {
             comment.status = "deleted";
             comment.deletedAt = new Date();
@@ -38,6 +67,7 @@ exports.moderateComment = async (req, res) => {
             comment.deletedAt = null;
         }
 
+        comment.updatedAt = new Date();
         await comment.save();
 
         return res.json({

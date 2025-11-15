@@ -3,8 +3,10 @@ const Blog = require("../models/blog");
 const imageKit = require("../config/imageKit");
 const Comment = require("../models/comment");
 
-//create blog
+// Create blog
 exports.createBlog = async (req, res) => {
+  console.log("Incoming blog:", req.body.blog); 
+  console.log("Incoming file:", req.file);
   try {
     const {
       title,
@@ -36,18 +38,11 @@ exports.createBlog = async (req, res) => {
       });
     }
 
-    const fileBuffer = fs.readFileSync(imageFile.path);
-   
-
-    const uploadResponse = await imageKit.upload({
-    file: fileBuffer,
-    fileName: imageFile.originalname,
-    folder: "/blogs"
-
-  
-
+  const uploadResponse = await imageKit.upload({
+  file: imageFile.buffer,   // use buffer directly
+  fileName: imageFile.originalname,
+  folder: "/blogs"
 });
-
 
     const optimizedImgUrl = imageKit.url({
       path: uploadResponse.filePath,
@@ -80,43 +75,27 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-// Get al blogs
-exports.getAllBlogs = async (req, res) => {
+// Get all blogs
+exports.getBlogs = async (req, res) => {
   try {
     const blogs = await Blog.find().sort({ createdAt: -1 });
     return res.json({ success: true, blogs });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
+  
+
 };
 
-
-// Get single blog
-exports.getSingleBlog = async (req, res) => {
-  try {
-    const blogId = req.params.blogId;
-    const blog = await Blog.findById(blogId);
-
-    if (!blog) {
-      return res.json({ success: false, message: "Blog not found" });
-    }
-
-    return res.json({ success: true, blog });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 // Update blog
 exports.updateBlog = async (req, res) => {
   try {
     const blogId = req.params.blogId;
-
     let blogData = req.body;
 
     if (req.file) {
       const fileBuffer = fs.readFileSync(req.file.path);
-
       const uploadResponse = await imageKit.upload({
         file: fileBuffer,
         fileName: req.file.originalname,
@@ -154,7 +133,6 @@ exports.deleteBlog = async (req, res) => {
     const blogId = req.params.blogId;
 
     const blog = await Blog.findByIdAndDelete(blogId);
-
     if (!blog) {
       return res.json({ success: false, message: "Blog not found" });
     }
@@ -166,7 +144,7 @@ exports.deleteBlog = async (req, res) => {
   }
 };
 
-// add comment
+// Add comment (public)
 exports.addComment = async (req, res) => {
   try {
     const { blogId, userId, comment } = req.body;
@@ -204,11 +182,10 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// get approved comments
-exports.getBlogComment = async (req, res) => {
+// Public: Get approved comments
+exports.fetchApprovedComments = async (req, res) => {
   try {
     const { blogId } = req.body;
-
     if (!blogId) {
       return res.json({
         success: false,

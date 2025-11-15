@@ -8,18 +8,16 @@ const commentSchema = new mongoose.Schema(
       required: true
     },
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Subscriber",
+      type: String,
       required: true
     },
     comment: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected", "deleted"], 
+      enum: ["pending", "approved", "rejected", "deleted"],
       default: "pending"
     },
     deletedAt: {
@@ -27,9 +25,7 @@ const commentSchema = new mongoose.Schema(
       default: null
     }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true } 
 );
 
 module.exports = mongoose.model("Comment", commentSchema);
