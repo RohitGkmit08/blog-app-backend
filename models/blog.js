@@ -20,7 +20,7 @@ const blogSchema = new mongoose.Schema(
     slug: {
       type: String,
       required: true,
-      unique: true,           
+      unique: true,
     },
 
     category: {
@@ -33,18 +33,11 @@ const blogSchema = new mongoose.Schema(
       required: true,
     },
 
-
     authorName: {
       type: String,
-      required: true,         // displayed on detailed blog page
+      required: true,
     },
 
-    comments: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Comment",       // supports user commenting feature
-      },
-    ],
 
     isPublished: {
       type: Boolean,
@@ -52,13 +45,10 @@ const blogSchema = new mongoose.Schema(
     },
 
     publishedAt: {
-      type: Date,             
+      type: Date,
     },
-
   },
   { timestamps: true }
 );
 
-const Blog = mongoose.model("Blog", blogSchema);
-
-module.exports = Blog;
+module.exports = mongoose.model("Blog", blogSchema);
