@@ -30,3 +30,23 @@ exports.adminLogin = async (req, res) => {
     });
   }
 };
+
+// get subscribed users.
+exports.getSubscribedUsers = async (req, res) => {
+  try {
+    const subscribers = await User.find(
+      { emailPreference: true },
+      { name: 1, email: 1, createdAt: 1 },
+    ).sort({ createdAt: -1 });
+
+    return res.json({
+      success: true,
+      subscribers,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

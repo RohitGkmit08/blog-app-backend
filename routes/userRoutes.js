@@ -1,19 +1,23 @@
 const express = require('express');
-const userRouter = express.Router();
+const router = express.Router();
 
 const {
-  registerUser,
-  loginUser,
-  updateEmailPreference,
+  register,
+  login,
+  toggleSubscription,
+  getSubscribers,
 } = require('../controllers/userController');
 
 const auth = require('../middleware/auth');
 
-// public
-userRouter.post('/register', registerUser);
-userRouter.post('/login', loginUser);
+// User auth
+router.post('/users/register', register);
+router.post('/users/login', login);
 
-// protected
-userRouter.patch('/email-preference', auth, updateEmailPreference);
+// User subscription toggle
+router.put('/users/toggle-subscription', auth, toggleSubscription);
 
-module.exports = userRouter;
+// Admin: fetch all subscribers
+router.get('/admin/subscribers', auth, getSubscribers);
+
+module.exports = router;

@@ -173,25 +173,32 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Public: Get approved comments
-exports.fetchApprovedComments = async (req, res) => {
+// Get comments based on status (public)
+exports.getComments = async (req, res) => {
   try {
-    const { blogId } = req.body;
-    if (!blogId) {
+    const { blogId, status } = req.params;
+
+    if (!blogId || !status) {
       return res.json({
         success: false,
-        message: 'blogId is required',
+        message: 'blogId and status are required',
       });
     }
 
     const comments = await Comment.find({
       blogId,
-      status: 'approved',
+      status,
       deletedAt: null,
     }).sort({ createdAt: -1 });
 
-    return res.json({ success: true, comments });
+    return res.json({
+      success: true,
+      comments,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
