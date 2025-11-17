@@ -3,6 +3,7 @@ require('dotenv').config();
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
@@ -14,7 +15,14 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = decoded;
+
+    // Assign based on role
+    if (decoded.role === 'admin') {
+      req.admin = decoded;
+    } else if (decoded.role === 'user') {
+      req.user = decoded;
+    }
+
     next();
   } catch (err) {
     return res.status(401).json({
@@ -23,4 +31,3 @@ module.exports = (req, res, next) => {
     });
   }
 };
-

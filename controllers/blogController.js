@@ -2,6 +2,7 @@ const fs = require('fs');
 const Blog = require('../models/blog');
 const imageKit = require('../config/imageKit');
 const Comment = require('../models/comment');
+const { notifyAllSubscribers } = require('../service/subscriberService');
 
 // Create blog
 exports.createBlog = async (req, res) => {
@@ -36,8 +37,9 @@ exports.createBlog = async (req, res) => {
       });
     }
 
+    // Upload image using buffer
     const uploadResponse = await imageKit.upload({
-      file: imageFile.buffer, // use buffer directly
+      file: imageFile.buffer,
       fileName: imageFile.originalname,
       folder: '/blogs',
     });
@@ -51,7 +53,8 @@ exports.createBlog = async (req, res) => {
       ],
     });
 
-    await Blog.create({
+    // create new blog
+    const newBlog = await Blog.create({
       title,
       subTitle,
       description,
@@ -61,14 +64,39 @@ exports.createBlog = async (req, res) => {
       authorName,
       isPublished,
       publishedAt,
+      wasNotified: false, //  important
     });
+
+    // publish detection
+    if (isPublished === true && newBlog.isNotified === false) {
+      try {
+        const subject = `Checkout this new blog published on : ${title}`;
+        const message = `A new blog has been published!
+
+        Title: ${title}
+        Category: ${category}
+        Visit the site to read it.`;
+
+        notifyAllSubscribers(subject, message);
+
+        // update flag
+        newBlog.isNotified = true;
+        await newBlog.save();
+      } catch (err) {
+        console.log('Email notification error:', err.message);
+      }
+    }
 
     return res.json({
       success: true,
       message: 'Blog added successfully',
+      blogId: newBlog._id,
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

@@ -46,6 +46,11 @@ const blogSchema = new mongoose.Schema(
     publishedAt: {
       type: Date,
     },
+
+    isNotified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

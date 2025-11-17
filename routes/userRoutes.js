@@ -11,13 +11,13 @@ const {
 const auth = require('../middleware/auth');
 
 // User auth
-router.post('/users/register', register);
-router.post('/users/login', login);
+router.post('/register', register);
+router.post('/login', login);
 
 // User subscription toggle
-router.put('/users/toggle-subscription', auth, toggleSubscription);
+router.put('/toggle-subscription', auth, toggleSubscription);
 
 // Admin: fetch all subscribers
-router.get('/admin/subscribers', auth, getSubscribers);
+router.get('/subscribers', auth, getSubscribers);
 
 module.exports = router;
