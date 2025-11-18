@@ -1,10 +1,9 @@
-const fs = require('fs');
-const Blog = require('../models/blog');
-const imageKit = require('../config/imageKit');
-const Comment = require('../models/comment');
-const { notifyAllSubscribers } = require('../service/subscriberService');
+const fs = require("fs");
+const Blog = require("../models/blog");
+const imageKit = require("../config/imageKit");
+const { notifyAllSubscribers } = require("../service/subscriberService");
 
-// Create blog
+// ADMIN — Create blog
 exports.createBlog = async (req, res) => {
   try {
     const {
@@ -33,27 +32,25 @@ exports.createBlog = async (req, res) => {
     ) {
       return res.json({
         success: false,
-        message: 'Missing required fields',
+        message: "Missing required fields",
       });
     }
 
-    // Upload image using buffer
     const uploadResponse = await imageKit.upload({
       file: imageFile.buffer,
       fileName: imageFile.originalname,
-      folder: '/blogs',
+      folder: "/blogs",
     });
 
     const optimizedImgUrl = imageKit.url({
       path: uploadResponse.filePath,
       transformation: [
-        { quality: 'auto' },
-        { format: 'webp' },
-        { width: '1280' },
+        { quality: "auto" },
+        { format: "webp" },
+        { width: "1280" },
       ],
     });
 
-    // create new blog
     const newBlog = await Blog.create({
       title,
       subTitle,
@@ -64,32 +61,27 @@ exports.createBlog = async (req, res) => {
       authorName,
       isPublished,
       publishedAt,
-      wasNotified: false, //  important
+      wasNotified: false,
     });
 
-    // publish detection
-    if (isPublished === true && newBlog.isNotified === false) {
+    // Notify subscribers
+    if (isPublished && !newBlog.wasNotified) {
       try {
-        const subject = `Checkout this new blog published on : ${title}`;
-        const message = `A new blog has been published!
-
-        Title: ${title}
-        Category: ${category}
-        Visit the site to read it.`;
+        const subject = `New blog published: ${title}`;
+        const message = `A new blog is live!\n\nTitle: ${title}\nCategory: ${category}`;
 
         notifyAllSubscribers(subject, message);
 
-        // update flag
-        newBlog.isNotified = true;
+        newBlog.wasNotified = true;
         await newBlog.save();
       } catch (err) {
-        console.log('Email notification error:', err.message);
+        console.log("Email notification error:", err.message);
       }
     }
 
     return res.json({
       success: true,
-      message: 'Blog added successfully',
+      message: "Blog added successfully",
       blogId: newBlog._id,
     });
   } catch (error) {
@@ -100,17 +92,7 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-// Get all blogs
-exports.getBlogs = async (req, res) => {
-  try {
-    const blogs = await Blog.find().sort({ createdAt: -1 });
-    return res.json({ success: true, blogs });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Update blog
+// ADMIN — Update blog
 exports.updateBlog = async (req, res) => {
   try {
     const blogId = req.params.blogId;
@@ -118,18 +100,19 @@ exports.updateBlog = async (req, res) => {
 
     if (req.file) {
       const fileBuffer = fs.readFileSync(req.file.path);
+
       const uploadResponse = await imageKit.upload({
         file: fileBuffer,
         fileName: req.file.originalname,
-        folder: '/blogs',
+        folder: "/blogs",
       });
 
       blogData.image = imageKit.url({
         path: uploadResponse.filePath,
         transformation: [
-          { quality: 'auto' },
-          { format: 'webp' },
-          { width: '1280' },
+          { quality: "auto" },
+          { format: "webp" },
+          { width: "1280" },
         ],
       });
     }
@@ -139,90 +122,33 @@ exports.updateBlog = async (req, res) => {
     });
 
     if (!updatedBlog) {
-      return res.json({ success: false, message: 'Blog not found' });
+      return res.json({ success: false, message: "Blog not found" });
     }
 
-    return res.json({ success: true, message: 'Blog updated', updatedBlog });
+    return res.json({
+      success: true,
+      message: "Blog updated",
+      updatedBlog,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Delete blog
+// ADMIN — Delete blog
 exports.deleteBlog = async (req, res) => {
   try {
     const blogId = req.params.blogId;
 
     const blog = await Blog.findByIdAndDelete(blogId);
     if (!blog) {
-      return res.json({ success: false, message: 'Blog not found' });
+      return res.json({ success: false, message: "Blog not found" });
     }
 
-    return res.json({ success: true, message: 'Blog deleted' });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Add comment (public)
-exports.addComment = async (req, res) => {
-  try {
-    const { blogId, userId, comment } = req.body;
-
-    if (!blogId || !userId || !comment) {
-      return res.json({
-        success: false,
-        message: 'Missing required fields',
-      });
-    }
-
-    const blogExists = await Blog.findById(blogId);
-    if (!blogExists) {
-      return res.json({
-        success: false,
-        message: 'Invalid blogId',
-      });
-    }
-
-    await Comment.create({
-      blogId,
-      userId,
-      comment,
-      status: 'pending',
-      deletedAt: null,
-    });
-
-    return res.json({
-      success: true,
-      message: 'Comment submitted for review',
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Get comments based on status (public)
-exports.getComments = async (req, res) => {
-  try {
-    const { blogId, status } = req.params;
-
-    if (!blogId || !status) {
-      return res.json({
-        success: false,
-        message: 'blogId and status are required',
-      });
-    }
-
-    const comments = await Comment.find({
-      blogId,
-      status,
-      deletedAt: null,
-    }).sort({ createdAt: -1 });
-
-    return res.json({
-      success: true,
-      comments,
-    });
+    return res.json({ success: true, message: "Blog deleted" });
   } catch (error) {
     return res.status(500).json({
       success: false,

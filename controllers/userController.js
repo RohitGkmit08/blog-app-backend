@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 // Register user
-// Register user
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -23,7 +22,6 @@ exports.register = async (req, res) => {
       });
     }
 
-    // DO NOT HASH HERE — let the model hash it
     const newUser = await User.create({
       name,
       email,

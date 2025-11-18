@@ -1,48 +1,9 @@
-const Comment = require('../models/comment');
+const Comment = require("../models/comment");
 
-//  public should only see approved comments for a blog
-exports.getApprovedComments = async (req, res) => {
-  try {
-    const { blogId } = req.params;
-
-    if (!blogId) {
-      return res.json({
-        success: false,
-        message: 'blogId is required',
-      });
-    }
-
-    const comments = await Comment.find({
-      blogId,
-      status: 'approved',
-      deletedAt: null,
-    })
-      .sort({ createdAt: -1 })
-      .select('userId comment createdAt');
-
-    return res.json({
-      success: true,
-      comments,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-};
-
-// admin gets comments of any status (approved/pending/rejected)
-exports.getComments = async (req, res) => {
+// ADMIN — Get comments by blog + status
+exports.getCommentsByStatus = async (req, res) => {
   try {
     const { blogId, status } = req.params;
-
-    if (!blogId || !status) {
-      return res.json({
-        success: false,
-        message: 'blogId and status are required',
-      });
-    }
 
     const comments = await Comment.find({
       blogId,
@@ -62,22 +23,15 @@ exports.getComments = async (req, res) => {
   }
 };
 
-// admin -> comment moderation
+// ADMIN — Moderate (approve/reject/delete)
 exports.moderateComment = async (req, res) => {
   try {
     const { commentId, status } = req.body;
 
-    if (!commentId) {
+    if (!["approved", "rejected", "deleted"].includes(status)) {
       return res.json({
         success: false,
-        message: 'commentId is required',
-      });
-    }
-
-    if (!['approved', 'rejected', 'deleted'].includes(status)) {
-      return res.json({
-        success: false,
-        message: 'Invalid status',
+        message: "Invalid status",
       });
     }
 
@@ -86,12 +40,12 @@ exports.moderateComment = async (req, res) => {
     if (!comment) {
       return res.json({
         success: false,
-        message: 'No comment found',
+        message: "Comment not found",
       });
     }
 
-    if (status === 'deleted') {
-      comment.status = 'deleted';
+    if (status === "deleted") {
+      comment.status = "deleted";
       comment.deletedAt = new Date();
     } else {
       comment.status = status;
