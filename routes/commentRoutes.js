@@ -1,20 +1,15 @@
 const express = require('express');
-const commentRouter = express.Router();
+const router = express.Router();
 
-const { addComment } = require('../controllers/blogController');
 const {
-  getApprovedComments,
-  getComments,
+  addComment,
+  getApprovedComments
 } = require('../controllers/commentController');
-const auth = require('../middleware/auth');
 
 // PUBLIC: Add comment
-commentRouter.post('/comments', addComment);
+router.post('/add', addComment);
 
-// PUBLIC: Get approved comments only
-commentRouter.get('/comments/:blogId/approved', getApprovedComments);
+// PUBLIC: Get approved comments
+router.get('/:blogId/approved', getApprovedComments);
 
-// ADMIN: Get comments by status
-commentRouter.get('/admin/comments/:blogId/:status', auth, getComments);
-
-module.exports = commentRouter;
+module.exports = router;

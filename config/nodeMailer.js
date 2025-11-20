@@ -1,12 +1,12 @@
-const nodemailer = require('nodemailer');
+// backend/config/nodeMailer.js
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
+const nodemailer = require("nodemailer");
+
+module.exports = nodemailer.createTransport({
+  host: process.env.MAILTRAP_HOST,
+  port: process.env.MAILTRAP_PORT,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.MAILTRAP_USER,
+    pass: process.env.MAILTRAP_PASS,
   },
 });
-
-module.exports = transporter;

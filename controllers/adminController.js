@@ -17,7 +17,7 @@ exports.adminLogin = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ email, role: 'admin' }, process.env.JWT_SECRET, {
       expiresIn: '1d',
     });
 
@@ -81,3 +81,4 @@ exports.notifySubscribers = async (req, res) => {
     });
   }
 };
+

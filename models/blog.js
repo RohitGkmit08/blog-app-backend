@@ -47,7 +47,7 @@ const blogSchema = new mongoose.Schema(
       type: Date,
     },
 
-    isNotified: {
+    wasNotified: {
       type: Boolean,
       default: false,
     },

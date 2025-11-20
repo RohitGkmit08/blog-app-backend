@@ -1,21 +1,24 @@
-const fs = require("fs");
 const Blog = require("../models/blog");
 const imageKit = require("../config/imageKit");
 const { notifyAllSubscribers } = require("../service/subscriberService");
+const {
+  ensureUniqueSlug,
+  normalizeSlugInput,
+} = require("../utils/slug");
 
 // ADMIN — Create blog
 exports.createBlog = async (req, res) => {
   try {
+    const blogPayload = JSON.parse(req.body.blog);
     const {
       title,
       subTitle,
       description,
-      slug,
       category,
       authorName,
       isPublished,
       publishedAt,
-    } = JSON.parse(req.body.blog);
+    } = blogPayload;
 
     const imageFile = req.file;
 
@@ -23,7 +26,6 @@ exports.createBlog = async (req, res) => {
       !title ||
       !subTitle ||
       !description ||
-      !slug ||
       !category ||
       !authorName ||
       isPublished === undefined ||
@@ -51,6 +53,18 @@ exports.createBlog = async (req, res) => {
       ],
     });
 
+    const slugSource = blogPayload.slug || title;
+    let slug;
+
+    try {
+      slug = await ensureUniqueSlug(Blog, slugSource);
+    } catch (slugError) {
+      return res.status(400).json({
+        success: false,
+        message: slugError.message,
+      });
+    }
+
     const newBlog = await Blog.create({
       title,
       subTitle,
@@ -70,7 +84,7 @@ exports.createBlog = async (req, res) => {
         const subject = `New blog published: ${title}`;
         const message = `A new blog is live!\n\nTitle: ${title}\nCategory: ${category}`;
 
-        notifyAllSubscribers(subject, message);
+        await notifyAllSubscribers(subject, message);
 
         newBlog.wasNotified = true;
         await newBlog.save();
@@ -96,13 +110,29 @@ exports.createBlog = async (req, res) => {
 exports.updateBlog = async (req, res) => {
   try {
     const blogId = req.params.blogId;
-    let blogData = req.body;
+    const existingBlog = await Blog.findById(blogId);
+
+    if (!existingBlog) {
+      return res.json({ success: false, message: "Blog not found" });
+    }
+
+    let blogData = req.body.blog ? JSON.parse(req.body.blog) : req.body;
+
+    if (blogData.isPublished !== undefined) {
+      const isPublished =
+        typeof blogData.isPublished === "string"
+          ? blogData.isPublished === "true"
+          : Boolean(blogData.isPublished);
+
+      blogData.isPublished = isPublished;
+      blogData.publishedAt = isPublished
+        ? blogData.publishedAt || new Date()
+        : null;
+    }
 
     if (req.file) {
-      const fileBuffer = fs.readFileSync(req.file.path);
-
       const uploadResponse = await imageKit.upload({
-        file: fileBuffer,
+        file: req.file.buffer,
         fileName: req.file.originalname,
         folder: "/blogs",
       });
@@ -117,18 +147,70 @@ exports.updateBlog = async (req, res) => {
       });
     }
 
-    const updatedBlog = await Blog.findByIdAndUpdate(blogId, blogData, {
-      new: true,
-    });
+    let slugNeedsUpdate = false;
+    let slugSource = null;
 
-    if (!updatedBlog) {
-      return res.json({ success: false, message: "Blog not found" });
+    if (typeof blogData.slug === "string") {
+      if (blogData.slug.trim()) {
+        const normalizedIncoming = normalizeSlugInput(blogData.slug);
+        if (!normalizedIncoming) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid slug provided.",
+          });
+        }
+
+        if (normalizedIncoming !== existingBlog.slug) {
+          slugNeedsUpdate = true;
+          slugSource = blogData.slug;
+        }
+      }
+
+      delete blogData.slug;
+    }
+
+    if (!slugNeedsUpdate && blogData.title && blogData.title !== existingBlog.title) {
+      slugNeedsUpdate = true;
+      slugSource = blogData.title;
+    }
+
+    Object.assign(existingBlog, blogData);
+
+    if (slugNeedsUpdate && slugSource) {
+      try {
+        existingBlog.slug = await ensureUniqueSlug(
+          Blog,
+          slugSource,
+          existingBlog._id
+        );
+      } catch (slugError) {
+        return res.status(400).json({
+          success: false,
+          message: slugError.message,
+        });
+      }
+    }
+    const shouldNotify =
+      existingBlog.isPublished && existingBlog.wasNotified === false;
+
+    await existingBlog.save();
+
+    if (shouldNotify) {
+      try {
+        const subject = `New blog published: ${existingBlog.title}`;
+        const message = `A new blog is live!\n\nTitle: ${existingBlog.title}\nCategory: ${existingBlog.category}`;
+        await notifyAllSubscribers(subject, message);
+        existingBlog.wasNotified = true;
+        await existingBlog.save();
+      } catch (err) {
+        console.log("Email notification error:", err.message);
+      }
     }
 
     return res.json({
       success: true,
       message: "Blog updated",
-      updatedBlog,
+      updatedBlog: existingBlog,
     });
   } catch (error) {
     return res.status(500).json({

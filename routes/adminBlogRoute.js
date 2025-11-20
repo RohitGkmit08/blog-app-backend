@@ -3,6 +3,7 @@ const router = express.Router();
 
 const upload = require("../middleware/multer");
 const auth = require("../middleware/auth");
+const Blog = require("../models/blog");
 
 const {
   createBlog,
@@ -10,24 +11,38 @@ const {
   deleteBlog,
 } = require("../controllers/blogController");
 
-const {
-  getCommentsByStatus,
-  moderateComment,
-} = require("../controllers/commentController");
+// ADMIN GET ALL BLOGS
+router.get("/", auth, async (req, res) => {
+  try {
+    const blogs = await Blog.find().sort({ createdAt: -1 });
+    res.json({ success: true, blogs });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
-// Admin: Create blog
-router.post("/blogs", auth, upload.single("image"), createBlog);
+// ADMIN GET SINGLE BLOG
+router.get("/:blogId", auth, async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.blogId);
 
-// Admin: Update blog
-router.put("/blogs/:blogId", auth, upload.single("image"), updateBlog);
+    if (!blog) {
+      return res.status(404).json({ success: false, message: "Blog not found" });
+    }
 
-// Admin: Delete blog
-router.delete("/blogs/:blogId", auth, deleteBlog);
+    res.json({ success: true, blog });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
-// Admin: Get comments by status (pending/approved/rejected)
-router.get("/comments/:blogId/:status", auth, getCommentsByStatus);
+// ADMIN CREATE BLOG
+router.post("/", auth, upload.single("image"), createBlog);
 
-// Admin: Moderate comment (approve/reject/delete)
-router.post("/comments/moderate", auth, moderateComment);
+// ADMIN UPDATE BLOG
+router.put("/:blogId", auth, upload.single("image"), updateBlog);
+
+// ADMIN DELETE BLOG
+router.delete("/:blogId", auth, deleteBlog);
 
 module.exports = router;
