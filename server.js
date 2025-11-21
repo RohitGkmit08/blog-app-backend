@@ -21,12 +21,20 @@ const commentRouter = require('./routes/commentRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// CORS
+const allowedOrigins = process.env.CORS_ORIGINS.split(",");
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: allowedOrigins,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
   })
 );
+
+
+
+
 
 app.use(express.json());
 app.use(express.json());
@@ -73,3 +81,5 @@ app.use("/api/users", userRouter);
 app.listen(PORT, () => {
   console.log(`App running on port ${PORT}`);
 });
+
+

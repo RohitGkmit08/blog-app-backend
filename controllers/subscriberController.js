@@ -64,7 +64,7 @@ exports.addSubscriber = async (req, res) => {
 exports.getSubscribers = async (req, res) => {
   try {
     const subscribers = await Subscriber.find().sort({ createdAt: -1 });
-    return res.status(200).json({ success: true, subscribers });
+    return res.status(200).json({ success:  true, subscribers });
   } catch {
     return res.status(500).json({ success: false, message: "Server error" });
   }
