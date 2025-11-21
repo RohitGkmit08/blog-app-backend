@@ -1,0 +1,52 @@
+// PUBLIC — Get single blog (by slug or id)
+exports.getBlog = async (req, res) => {
+  try {
+    const blog = await findPublishedBlog(req.params.identifier);
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      blog,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// PUBLIC — Get only approved comments for a blog
+exports.getApprovedComments = async (req, res) => {
+  try {
+    const { blogId } = req.params;
+
+    const comments = await Comment.find({
+      blogId,
+      status: "approved",
+      deletedAt: null,
+    })
+      .sort({ createdAt: -1 })
+      .select("userId comment createdAt");
+
+    return res.json({
+      success: true,
+      comments,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+
+blogApp-935615289.us-east-1.elb.amazonaws.com
