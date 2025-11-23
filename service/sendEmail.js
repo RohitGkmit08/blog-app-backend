@@ -1,30 +1,33 @@
-// backend/service/sendEmail.js
+const transporter = require('../config/nodeMailer');
 
-const transporter = require("../config/nodeMailer");
 
-exports.sendEmail = async (to, subject, html, overrides = {}) => {
+const sendEmail = async (to, subject, html, overrides = {}) => {
   try {
-    
-    const fromAddress = `"Blog App" <no-reply@blogapp.test>`;
+    const fromAddress = `"Blog App" <${process.env.ADMIN_EMAIL || 'no-reply@blogapp.test'}>`;
 
     if (!to) {
-      throw new Error("Recipient email address is required");
+      throw new Error('Recipient email address is required');
     }
 
-    const recipients = Array.isArray(to) ? to.join(",") : to;
+    // Handle array of recipients
+    const recipients = Array.isArray(to) ? to.join(', ') : to;
 
-    const info = await transporter.sendMail({
+    const mailOptions = {
       from: fromAddress,
       to: recipients,
       subject,
       html,
       ...overrides,
-    });
+    };
+
+    const info = await transporter.sendMail(mailOptions);
 
     return { success: true, info };
-
-  } catch (err) {
-    console.error("MAIL ERROR:", err);
-    return { success: false, error: err.message };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
   }
 };
+
+module.exports = { sendEmail };
+

@@ -1,8 +1,7 @@
-// backend/config/nodeMailer.js
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 
-const nodemailer = require("nodemailer");
-
-module.exports = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   host: process.env.MAILTRAP_HOST,
   port: process.env.MAILTRAP_PORT,
   auth: {
@@ -10,3 +9,6 @@ module.exports = nodemailer.createTransport({
     pass: process.env.MAILTRAP_PASS,
   },
 });
+
+module.exports = transporter;
+
