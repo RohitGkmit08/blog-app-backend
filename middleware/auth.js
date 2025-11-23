@@ -1,22 +1,29 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      message: 'Unauthorized: Token missing',
-    });
-  }
-
-  const token = authHeader.split(' ')[1];
-
+const auth = (req, res, next) => {
   try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: Token missing',
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: Token missing',
+      });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Assign based on role
+    // Attach user info to request based on role
     if (decoded.role === 'admin') {
       req.admin = decoded;
     } else if (decoded.role === 'user') {
@@ -24,10 +31,13 @@ module.exports = (req, res, next) => {
     }
 
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(401).json({
       success: false,
-      message: 'Unauthorized: Invalid token',
+      message: 'Unauthorized: Invalid or expired token',
     });
   }
 };
+
+module.exports = auth;
+

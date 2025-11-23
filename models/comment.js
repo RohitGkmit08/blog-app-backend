@@ -14,6 +14,7 @@ const commentSchema = new mongoose.Schema(
     comment: {
       type: String,
       required: true,
+      trim: true,
     },
     status: {
       type: String,
@@ -25,7 +26,12 @@ const commentSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
+// Indexes for faster queries
+commentSchema.index({ blogId: 1, status: 1 });
+commentSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Comment', commentSchema);
+

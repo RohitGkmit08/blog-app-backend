@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
-
 const {
   addComment,
-  getApprovedComments
+  getApprovedComments,
 } = require('../controllers/commentController');
 
-// PUBLIC: Add comment
+// Add comment (public - requires subscription)
 router.post('/add', addComment);
 
-// PUBLIC: Get approved comments
+// Get approved comments (public)
 router.get('/:blogId/approved', getApprovedComments);
 
 module.exports = router;
+

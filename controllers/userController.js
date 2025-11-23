@@ -1,30 +1,32 @@
-const User = require('../models/user');
+const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
-// Register user
+
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: 'All fields are required',
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: 'Email already exists',
       });
     }
 
+    // Create new user
     const newUser = await User.create({
       name,
-      email,
+      email: email.toLowerCase(),
       password,
       emailPreference: false,
     });
@@ -37,46 +39,52 @@ exports.register = async (req, res) => {
         email: newUser.email,
       },
     });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Login user
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         message: 'Email and password are required',
       });
     }
 
-    const user = await User.findOne({ email });
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
-      return res.json({
+      return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Verify password
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.json({
+      return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
       });
     }
 
+    // Generate JWT token
     const token = jwt.sign(
       {
         userId: user._id,
         role: 'user',
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' },
+      { expiresIn: '1d' }
     );
 
     return res.json({
@@ -84,17 +92,26 @@ exports.login = async (req, res) => {
       message: 'Login successful',
       token,
     });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Toggle email subscription
+
 exports.toggleSubscription = async (req, res) => {
   try {
     const userId = req.user.userId;
 
     const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
 
     user.emailPreference = !user.emailPreference;
     await user.save();
@@ -106,12 +123,15 @@ exports.toggleSubscription = async (req, res) => {
         : 'Unsubscribed successfully',
       subscribed: user.emailPreference,
     });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Fetch all subscribed users (admin)
+
 exports.getSubscribers = async (req, res) => {
   try {
     const subscribers = await User.find({ emailPreference: true })
@@ -122,7 +142,11 @@ exports.getSubscribers = async (req, res) => {
       success: true,
       subscribers,
     });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+

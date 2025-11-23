@@ -1,18 +1,16 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-
-const upload = require("../middleware/multer");
-const auth = require("../middleware/auth");
-const Blog = require("../models/blog");
-
+const upload = require('../middleware/multer');
+const auth = require('../middleware/auth');
+const Blog = require('../models/Blog');
 const {
   createBlog,
   updateBlog,
   deleteBlog,
-} = require("../controllers/blogController");
+} = require('../controllers/blogController');
 
-// ADMIN GET ALL BLOGS
-router.get("/", auth, async (req, res) => {
+// Get all blogs (admin - includes unpublished)
+router.get('/', auth, async (req, res) => {
   try {
     const blogs = await Blog.find().sort({ createdAt: -1 });
     res.json({ success: true, blogs });
@@ -21,13 +19,16 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// ADMIN GET SINGLE BLOG
-router.get("/:blogId", auth, async (req, res) => {
+// Get single blog by ID (admin)
+router.get('/:blogId', auth, async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.blogId);
 
     if (!blog) {
-      return res.status(404).json({ success: false, message: "Blog not found" });
+      return res.status(404).json({
+        success: false,
+        message: 'Blog not found',
+      });
     }
 
     res.json({ success: true, blog });
@@ -36,13 +37,14 @@ router.get("/:blogId", auth, async (req, res) => {
   }
 });
 
-// ADMIN CREATE BLOG
-router.post("/", auth, upload.single("image"), createBlog);
+// Create blog (protected)
+router.post('/', auth, upload.single('image'), createBlog);
 
-// ADMIN UPDATE BLOG
-router.put("/:blogId", auth, upload.single("image"), updateBlog);
+// Update blog (protected)
+router.put('/:blogId', auth, upload.single('image'), updateBlog);
 
-// ADMIN DELETE BLOG
-router.delete("/:blogId", auth, deleteBlog);
+// Delete blog (protected)
+router.delete('/:blogId', auth, deleteBlog);
 
 module.exports = router;
+

@@ -1,12 +1,14 @@
-const mongoose = require("mongoose");
-const Blog = require("../models/blog");
-const Comment = require("../models/comment");
+const mongoose = require('mongoose');
+const Blog = require('../models/Blog');
+const Comment = require('../models/Comment');
 
 const { isValidObjectId } = mongoose;
 
+/
 const findPublishedBlog = async (identifier) => {
   if (!identifier) return null;
 
+  // Try to find by slug first
   const slugMatch = await Blog.findOne({
     slug: identifier,
     isPublished: true,
@@ -16,25 +18,40 @@ const findPublishedBlog = async (identifier) => {
     return slugMatch;
   }
 
-  if (!isValidObjectId(identifier)) {
-    return null;
+  // If not found by slug and it's a valid ObjectId, try by ID
+  if (isValidObjectId(identifier)) {
+    return Blog.findOne({ _id: identifier, isPublished: true });
   }
 
-  return Blog.findOne({ _id: identifier, isPublished: true });
+  return null;
 };
 
-// PUBLIC — Get all blogs
+/**
+ * Get all published blogs
+ * GET /api/blogs
+ */
 exports.getBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find({ isPublished: true })
-      .sort({ createdAt: -1 });
-    return res.json({ success: true, blogs });
+    const blogs = await Blog.find({ isPublished: true }).sort({
+      createdAt: -1,
+    });
+
+    return res.json({
+      success: true,
+      blogs,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// PUBLIC — Get single blog (by slug or id)
+/**
+ * Get single blog by slug or ID
+ * GET /api/blogs/:identifier
+ */
 exports.getBlog = async (req, res) => {
   try {
     const blog = await findPublishedBlog(req.params.identifier);
@@ -42,7 +59,7 @@ exports.getBlog = async (req, res) => {
     if (!blog) {
       return res.status(404).json({
         success: false,
-        message: "Blog not found",
+        message: 'Blog not found',
       });
     }
 
@@ -58,27 +75,31 @@ exports.getBlog = async (req, res) => {
   }
 };
 
-// PUBLIC — Get only approved comments for a blog
+/**
+ * Get approved comments for a blog
+ * GET /api/blogs/:blogId/comments
+ */
 exports.getApprovedComments = async (req, res) => {
   try {
     const { blogId } = req.params;
 
     const comments = await Comment.find({
       blogId,
-      status: "approved",
+      status: 'approved',
       deletedAt: null,
     })
       .sort({ createdAt: -1 })
-      .select("userId comment createdAt");
+      .select('userId comment createdAt');
 
     return res.json({
       success: true,
       comments,
     });
-  } catch (err) {
+  } catch (error) {
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message,
     });
   }
 };
+

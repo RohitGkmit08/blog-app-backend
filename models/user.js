@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
@@ -8,7 +8,6 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     email: {
       type: String,
       required: true,
@@ -16,30 +15,33 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-
     password: {
       type: String,
       required: true,
     },
-
     emailPreference: {
       type: Boolean,
       default: false,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-// hashing password before saving
+// Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// comparing  password
-userSchema.methods.comparePassword = async function (plain) {
-  return await bcrypt.compare(plain, this.password);
+// Compare password method
+userSchema.methods.comparePassword = async function (plainPassword) {
+  return await bcrypt.compare(plainPassword, this.password);
 };
 
+// Index for faster queries
+userSchema.index({ email: 1 });
+userSchema.index({ emailPreference: 1 });
+
 module.exports = mongoose.model('User', userSchema);
+

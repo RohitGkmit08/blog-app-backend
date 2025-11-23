@@ -1,84 +1,114 @@
-const Comment = require("../models/comment");
-const Blog = require("../models/blog");
-const Subscriber = require("../models/subscriber");
+const Comment = require('../models/Comment');
+const Blog = require('../models/Blog');
+const Subscriber = require('../models/Subscriber');
+const { sendEmail } = require('../service/sendEmail');
 
-// PUBLIC — Add comment (always goes to pending)
+
 exports.addComment = async (req, res) => {
   try {
-    const { blogId, userId, comment, email } = req.body;
+    const { blogId, comment, email } = req.body;
 
     if (!blogId || !comment || !email) {
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: 'Missing required fields: blogId, comment, and email',
       });
     }
 
+    // Verify blog exists
     const blogExists = await Blog.findById(blogId);
     if (!blogExists) {
-      return res.json({
+      return res.status(404).json({
         success: false,
-        message: "Invalid blogId",
+        message: 'Invalid blogId',
       });
     }
 
-    const subscriber = await Subscriber.findOne({ email });
+    // Verify user is subscribed
+    const subscriber = await Subscriber.findOne({ email: email.toLowerCase() });
     if (!subscriber) {
       return res.status(403).json({
         success: false,
-        message: "Please subscribe to comment on blogs.",
+        message: 'Please subscribe to comment on blogs.',
       });
     }
 
-    await Comment.create({
+    // Create comment with pending status
+    const newComment = await Comment.create({
       blogId,
-      userId: userId || email,
+      userId: email, // Using email as userId identifier
       comment,
-      status: "pending",
-      deletedAt: null,
+      status: 'pending',
     });
+
+    // Notify admin about new comment
+    try {
+      await sendEmail(
+        process.env.ADMIN_EMAIL,
+        'New Comment Submitted',
+        `
+        <h3>New Comment Pending Review</h3>
+        <p><strong>Blog:</strong> ${blogExists.title}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Comment:</strong> ${comment}</p>
+        <p><strong>Comment ID:</strong> ${newComment._id}</p>
+      `
+      );
+    } catch (emailError) {
+      console.error('Failed to send admin notification:', emailError);
+    }
 
     return res.json({
       success: true,
-      message: "Comment submitted for review",
+      message: 'Comment submitted for review',
     });
-  } catch (err) {
+  } catch (error) {
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message,
     });
   }
 };
 
-// PUBLIC — Get only approved comments
+
 exports.getApprovedComments = async (req, res) => {
   try {
     const { blogId } = req.params;
 
     const comments = await Comment.find({
       blogId,
-      status: "approved",
+      status: 'approved',
       deletedAt: null,
     })
       .sort({ createdAt: -1 })
-      .select("userId comment createdAt");
+      .select('userId comment createdAt');
 
     return res.json({
       success: true,
       comments,
     });
-  } catch (err) {
+  } catch (error) {
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message,
     });
   }
 };
 
-// ADMIN — Get comments by blog + status
+/**
+ * Get comments by blog and status (admin)
+ * GET /api/admin/comments/:blogId/:status
+ */
 exports.getCommentsByStatus = async (req, res) => {
   try {
     const { blogId, status } = req.params;
+
+    if (!['pending', 'approved', 'rejected', 'deleted'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status',
+      });
+    }
 
     const comments = await Comment.find({
       blogId,
@@ -98,29 +128,33 @@ exports.getCommentsByStatus = async (req, res) => {
   }
 };
 
-// ADMIN — Moderate (approve/reject/delete)
+/**
+ * Moderate comment (approve/reject/delete)
+ * PUT /api/admin/comments/moderate
+ */
 exports.moderateComment = async (req, res) => {
   try {
     const { commentId, status } = req.body;
 
-    if (!["approved", "rejected", "deleted"].includes(status)) {
-      return res.json({
+    if (!['approved', 'rejected', 'deleted'].includes(status)) {
+      return res.status(400).json({
         success: false,
-        message: "Invalid status",
+        message: 'Invalid status. Must be: approved, rejected, or deleted',
       });
     }
 
     const comment = await Comment.findById(commentId);
 
     if (!comment) {
-      return res.json({
+      return res.status(404).json({
         success: false,
-        message: "Comment not found",
+        message: 'Comment not found',
       });
     }
 
-    if (status === "deleted") {
-      comment.status = "deleted";
+    // Update comment status
+    if (status === 'deleted') {
+      comment.status = 'deleted';
       comment.deletedAt = new Date();
     } else {
       comment.status = status;
@@ -134,10 +168,11 @@ exports.moderateComment = async (req, res) => {
       success: true,
       message: `Comment ${status}`,
     });
-  } catch (err) {
+  } catch (error) {
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message,
     });
   }
 };
+
