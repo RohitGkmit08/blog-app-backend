@@ -3,7 +3,9 @@ const { sendEmail } = require('../service/sendEmail');
 const TARGET_EMAIL =
   process.env.GUEST_SUBMISSION_TARGET || 'sinharohit96690@gmail.com';
 
-/
+/**
+ * Build HTML email content for guest submission
+ */
 const buildHtml = (payload) => {
   const {
     title,

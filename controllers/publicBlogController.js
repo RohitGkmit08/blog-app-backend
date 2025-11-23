@@ -4,11 +4,11 @@ const Comment = require('../models/Comment');
 
 const { isValidObjectId } = mongoose;
 
-/
+
 const findPublishedBlog = async (identifier) => {
   if (!identifier) return null;
 
-  // Try to find by slug first
+  // find by slug first
   const slugMatch = await Blog.findOne({
     slug: identifier,
     isPublished: true,
@@ -18,7 +18,7 @@ const findPublishedBlog = async (identifier) => {
     return slugMatch;
   }
 
-  // If not found by slug and it's a valid ObjectId, try by ID
+  // try by ID
   if (isValidObjectId(identifier)) {
     return Blog.findOne({ _id: identifier, isPublished: true });
   }
@@ -26,10 +26,7 @@ const findPublishedBlog = async (identifier) => {
   return null;
 };
 
-/**
- * Get all published blogs
- * GET /api/blogs
- */
+
 exports.getBlogs = async (req, res) => {
   try {
     const blogs = await Blog.find({ isPublished: true }).sort({
@@ -48,10 +45,7 @@ exports.getBlogs = async (req, res) => {
   }
 };
 
-/**
- * Get single blog by slug or ID
- * GET /api/blogs/:identifier
- */
+
 exports.getBlog = async (req, res) => {
   try {
     const blog = await findPublishedBlog(req.params.identifier);
@@ -75,10 +69,7 @@ exports.getBlog = async (req, res) => {
   }
 };
 
-/**
- * Get approved comments for a blog
- * GET /api/blogs/:blogId/comments
- */
+
 exports.getApprovedComments = async (req, res) => {
   try {
     const { blogId } = req.params;
