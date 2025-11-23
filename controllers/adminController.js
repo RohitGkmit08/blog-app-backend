@@ -1,127 +1,99 @@
-const jwt = require("jsonwebtoken");
-const Blog = require("../models/blog");
-const { create } = require("../models/comment");
-require("dotenv").config();
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+const User = require('../models/User');
+const { notifyAllSubscribers } = require('../service/subscriberService');
+
 
 exports.adminLogin = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        if (email !== process.env.ADMIN_ID || password !== process.env.ADMIN_KEY) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials"
-            });
-        }
-
-        const token = jwt.sign(
-            { email },
-            process.env.SECRET_KEY,
-            { expiresIn: "1d" }
-        );
-
-        return res.json({
-            success: true,
-            token
-        });
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required',
+      });
     }
+
+    // Validate admin credentials from environment variables
+    if (email !== process.env.ADMIN_ID || password !== process.env.ADMIN_KEY) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { email, role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    return res.json({
+      success: true,
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 
-exports.getAllBlogs = async(req , res) => {
-    try{
-        const blogs = await Blog.find({}).sort({createdAt:-1});
-         return res.json({
-            success: true,
-            blogs
-        });
-    }
-    catch(err){
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
+exports.getSubscribedUsers = async (req, res) => {
+  try {
+    const subscribers = await User.find(
+      { emailPreference: true },
+      { name: 1, email: 1, createdAt: 1 }
+    ).sort({ createdAt: -1 });
 
-exports.getAllComments = async (req , res) => {
-    try{
-        let comments = await Comment.find({}).populate("blog").sort({createdAt:-1})
-        return res.json({
-            success: true,
-            comments
-        });
-    }
-    catch(err){
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
+    return res.json({
+      success: true,
+      subscribers,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
+exports.notifySubscribers = async (req, res) => {
+  try {
+    const { subject, message } = req.body;
 
-exports.getDashboard = async(req , res)=>{
-    try{
-        const recentBlogs = await Blog.find({}).sort({createdAt:-1});
-        const blogs = await Blog.countDocuments();
-        const comments = await Comment.countDocuments();
-        const draft = await Blog.countDocuments({isPublished:false})
-
-        const dashboardData = {
-            blogs, comments, draft, recentBlogs
-        }
-        res.json({
-            success: true,
-            dashboardData
-        })
+    if (!subject || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Subject and message are required',
+      });
     }
-    catch(err){
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
 
+    const html = `<p>${message}</p>`;
 
-exports.deleteComment = async(req , res) => {
-    try{
-        const {id} = req.body;
-        await Comment.findByIdAndDelete(id);
+    const result = await notifyAllSubscribers(subject, html);
 
-        res.json({
-            success:true,
-            message:"comment deleted successfully"
-        })
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        message: result.message || 'Failed to send emails',
+      });
     }
-    catch(err){
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
 
-exports.isApproved = async(req , res) => {
-    try{
-        const {id} = req.body;
-        await Comment.findByIdAndUpdate(id, {isApproved : true});
+    return res.json({
+      success: true,
+      message: 'Emails sent successfully',
+      notifiedUsers: result.count,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
-        res.json({
-            success:true,
-            message:"comment approved successfully"
-        })
-    }
-    catch(err){
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-}
